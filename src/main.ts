@@ -1,3 +1,8 @@
 import { fetchData } from "./client";
 
-console.log(fetchData())
+
+const runExtractor = async () => {
+  console.log(await fetchData())
+}
+
+runExtractor()

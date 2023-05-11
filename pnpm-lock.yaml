@@ -1,6 +1,12 @@
 lockfileVersion: '6.0'
 
 devDependencies:
+  '@tsconfig/node16':
+    specifier: ^1.0.3
+    version: 1.0.3
+  '@types/node':
+    specifier: ^20.1.2
+    version: 20.1.2
   ts-node-dev:
     specifier: ^2.0.0
     version: 2.0.0(@types/node@20.1.2)(typescript@5.0.4)
