@@ -1,7 +1,9 @@
 import { fakeFetchData, Filters } from "./client";
 import { fakeSaveProductsToMongo, fakeSaveIterationToMongo } from "./db";
+import { round } from "./utils";
 
-const MAX_PRICE = 100000;
+const MAX_PRICE = 2000;
+// const MAX_PRICE = 100000;
 
 // Thinking out loud.
 // Would be cool to run this extractor from both sides of price range simultaneously:
@@ -50,8 +52,8 @@ const runIteration = async (data: Iteration) => {
   const filters: Filters = {
     price: { min: prevMax, max: 0 }
   }
-  const nextPriceIterator = total / MAX_PRICE;
-  filters.price!.max = prevMax + nextPriceIterator;
+  const nextPriceIterator = round((MAX_PRICE / total));
+  filters.price!.max = round(prevMax + nextPriceIterator);
   priceIterator = nextPriceIterator;
 
   queue.add({ filters, status: 'pending' })
@@ -68,7 +70,7 @@ const ticker = async () => {
   while (!allProductsExtracted) {
     console.log('tick')
     // TODO: fine-tune the delay
-    await new Promise((res) => setTimeout(res, 500));
+    await new Promise((res) => setTimeout(res, 100));
     const nextIteration = queue.getNext();
     if (nextIteration) {
       runIteration(nextIteration)

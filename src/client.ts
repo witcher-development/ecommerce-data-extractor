@@ -1,5 +1,6 @@
+import { round } from "./utils";
 
-const randomInRange = (max = 400, min = 100) => Math.floor(Math.random() * ((max-min)+1) + min);
+const randomInRange = (min: number, max: number) => round(Math.floor(Math.random() * ((max-min)+1) + min));
 
 export type Filters = {
   price?: {
@@ -14,14 +15,16 @@ export type Response = {
 }
 export const fakeFetchData = ({ price }: Filters = {}): Promise<Response> => {
   // console.log('request', price)
+  const total = randomInRange(0, 800)
+  const count = total < 50 ? total : 50;
   const data: Response = {
-    total: randomInRange(1, 5000),
-    count: 5,
-    products: Array(5).fill({})
+    total,
+    count,
+    products: Array(count).fill({})
   }
   // console.log(data.total)
 
   return new Promise((res) => {
-    setTimeout(() => res(data), randomInRange())
+    setTimeout(() => res(data), randomInRange(100, 400))
   })
 }
