@@ -13,9 +13,9 @@ export type Response = {
   count: number,
   products: {}[]
 }
-export const fakeFetchData = ({ price }: Filters = {}): Promise<Response> => {
+export const fakeFetchData = ({ price }: Filters = {}, initial = false, maxTotal: number | null): Promise<Response> => {
   // console.log('request', price)
-  const total = randomInRange(0, 800)
+  const total = initial ? 1000 : randomInRange(0, maxTotal || 500)
   const count = total < 50 ? total : 50;
   const data: Response = {
     total,
