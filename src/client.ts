@@ -1,8 +1,5 @@
 import { randomInRange } from "./utils";
-
-const MAX_COUNT_PER_RESPONSE = 10;
-const FAKE_TOTAL_PRODUCTS_IN_API = 1000;
-const FAKE_MAX_TOTAL_PER_PRICE_RANGE = 50;
+import { MAX_COUNT_PER_RESPONSE, FAKE_MAX_TOTAL_PER_PRICE_RANGE, FAKE_TOTAL_PRODUCTS_IN_API } from "./consts";
 
 export type Filters = {
   price: {
@@ -26,6 +23,6 @@ export const fakeFetchData = ({ price }: Filters, initial = false, maxTotal: num
 
   return new Promise((res) => {
     // Just arbitrary server response time
-    setTimeout(() => res(data), randomInRange(10, 40))
+    setTimeout(() => res(data), randomInRange(40, 300))
   })
 }

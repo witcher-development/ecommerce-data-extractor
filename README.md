@@ -22,4 +22,4 @@ Optimization opportunities I see:
 1) Run iteration in parallel (maybe Node processes).
 2) Save products to DB in a more clumsy way to perform a post-facto dedupe
 
-![img.png](schema.png)
+![img.png](extractor-algorythm.png)

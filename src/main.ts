@@ -1,9 +1,7 @@
 import {fakeFetchData, Filters, Response} from "./client";
 import * as db from "./db";
-import { round, logExtractionProgress, logIterationData } from "./utils";
-
-const MAX_PRICE = 2000;
-// const MAX_PRICE = 100000;
+import {logAverageIterationPrice, logEngOfExtractor, logExtractionProgress, logIterationData, logTick} from "./utils";
+import { MAX_PRICE } from "./consts";
 
 // Thinking out loud.
 // Would be cool to run this extractor from both sides of price range simultaneously:
@@ -36,6 +34,17 @@ class Queue {
     nextIteration.status = 'processing'
     return nextIteration
   }
+
+  getAveragePrice () {
+    const length = this.iterations.length;
+    const min = this.iterations.map(({ filters }) => filters.price.min).reduce((accum, min) => {
+      return accum + min
+    }, 0) / length
+    const max = this.iterations.map(({ filters }) => filters.price.max).reduce((accum, max) => {
+      return accum + max
+    }, 0) / length
+    return { min, max }
+  }
 }
 const queue = new Queue()
 
@@ -59,13 +68,13 @@ const addIteration = (previousIteration: Iteration, { total, count }: Omit<Respo
       })
     }
     case "nested": {
-      const nestedIterator = round((total / count));
+      const nestedIterator = (max || MAX_PRICE) / total;
       return queue.add({
         filters: {
           price: { min, max: min + nestedIterator }
         },
         iterator: nestedIterator,
-        range: max,
+        range: max || MAX_PRICE,
         nestedLevel: nestedLevel + 1,
         order: 0,
         prevTotal: total
@@ -80,7 +89,7 @@ const addIteration = (previousIteration: Iteration, { total, count }: Omit<Respo
 const runIteration = async (iteration: Iteration, initial = false) => {
   const { filters, iterator, range, nestedLevel, order, prevTotal } = iteration;
   const { total, count, products } = await fakeFetchData(filters, initial, prevTotal || null);
-  logIterationData(order, nestedLevel, filters.price, total, count)
+  logIterationData(order, nestedLevel, filters.price, total, count, range, iterator)
 
   if (initial) {
     db.fakeSaveProductsTotal(total)
@@ -112,27 +121,30 @@ let allProductsExtracted = false;
 const isExtractionDoneChecker = async () => {
   while (!allProductsExtracted) {
     await new Promise((res) => setTimeout(res, 1000));
-    const { productsInAPI, productsInDB } = await db.fakeGetProductsTotal();
 
+    const { productsInAPI, productsInDB } = await db.fakeGetProductsTotal();
     logExtractionProgress(productsInDB, productsInAPI)
+
+    const { min, max } = queue.getAveragePrice()
+    logAverageIterationPrice(min, max)
 
     if (productsInDB >= productsInAPI) {
       allProductsExtracted = true
     }
   }
-  console.log('loop 1 ended -------------------------------------------------------------------------')
+  logEngOfExtractor()
 }
 isExtractionDoneChecker();
 
 const ticker = async () => {
   while (!allProductsExtracted) {
-    console.log('tick')
+    logTick()
     await new Promise((res) => setTimeout(res, 100));
     const nextIteration = queue.getNext();
     if (nextIteration) {
       runIteration(nextIteration)
     }
   }
-  console.log('loop 2 ended -------------------------------------------------------------------------')
+  logEngOfExtractor()
 }
 ticker()
