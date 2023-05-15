@@ -1,12 +1,14 @@
-let savedProductsTotal = 0;
+let productsInDB = 0;
+let productsInAPI = 0;
 
-export const fakeGetProductsTotalFromMongo = async () => savedProductsTotal;
+export const fakeGetProductsTotal = async () => ({ productsInDB, productsInAPI });
 
-export const fakeSaveProductsToMongo = (products: any[]) => {
-	savedProductsTotal += products.length
-  // console.log('DB: save products, ', products)
+export const fakeSaveProducts = (products: any[]) => {
+	productsInDB += products.length
 }
 
-export const fakeSaveIterationToMongo = (iteration: any) => {
-  // console.log('DB: save iteration, ', iteration)
+export const fakeSaveIteration = (iteration: any) => {}
+
+export const fakeSaveProductsTotal = (total: number) => {
+	productsInAPI = total
 }
