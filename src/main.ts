@@ -56,6 +56,7 @@ const addIteration = (previousIteration: Iteration, { total, count }: Omit<Respo
   const { filters, iterator, range, nestedLevel, order, prevTotal } = previousIteration;
   const { min, max } = filters.price;
   switch (type) {
+    // For 'subsequent' we keep everything the same only shift the price range for one price iterator
     case "subsequent": {
       return queue.add({
         filters: {
@@ -63,10 +64,13 @@ const addIteration = (previousIteration: Iteration, { total, count }: Omit<Respo
         },
         iterator,
         range,
-        nestedLevel,
-        order: order + 1
+
+        // those for dev purposes
+        order: order + 1,
+        nestedLevel
       })
     }
+    // For 'nested' we take current 'min' and 'max' as new price range and decrease the price iterator to go through the sub-range in more details
     case "nested": {
       const nestedIterator = (max || MAX_PRICE) / total;
       return queue.add({
@@ -75,6 +79,8 @@ const addIteration = (previousIteration: Iteration, { total, count }: Omit<Respo
         },
         iterator: nestedIterator,
         range: max || MAX_PRICE,
+
+        // those for dev purposes
         nestedLevel: nestedLevel + 1,
         order: 0,
         prevTotal: total
@@ -95,28 +101,26 @@ const runIteration = async (iteration: Iteration, initial = false) => {
     db.fakeSaveProductsTotal(total)
   }
 
-  const prevMax = filters.price.max
-  // If we only save data when we found the optimal price range - we discard previous iterations. It is not optimal.
-  // What I can see now - based on knowledge of: 1) Are products in response sorted by price; 2) Can we dedup products post-factum
-  // we could perform some optimisations.
+  const max = filters.price.max
+
+  // Add next-in-row iteration to continue discovering current 'range'
+  if (max !== range && !initial) {
+    addIteration(iteration, { total, count }, 'subsequent')
+  }
+
   if (count === total) {
-    if (prevMax < range) {
-      addIteration(iteration, { total, count }, 'subsequent')
-    }
     return db.fakeSaveProducts(products)
   }
 
+  // Add nested iteration to dig into current segment of 'min' and 'max' price
   addIteration(iteration, { total, count }, 'nested')
-
-  if (prevMax !== range && !initial) {
-    addIteration(iteration, { total, count }, 'subsequent')
-  }
 }
 
 
-// Initial one
+// Initial call to get the total of products in API
 runIteration({ status: 'pending', filters: { price: { min: 0, max: 0 }}, iterator: 0, range: MAX_PRICE, nestedLevel: -1, order: -1 }, true)
 
+// Re-evaluates the main condition to stop the script at some point
 let allProductsExtracted = false;
 const isExtractionDoneChecker = async () => {
   while (!allProductsExtracted) {
@@ -125,17 +129,18 @@ const isExtractionDoneChecker = async () => {
     const { productsInAPI, productsInDB } = await db.fakeGetProductsTotal();
     logExtractionProgress(productsInDB, productsInAPI)
 
-    const { min, max } = queue.getAveragePrice()
-    logAverageIterationPrice(min, max)
-
     if (productsInDB >= productsInAPI) {
       allProductsExtracted = true
     }
+
+    const { min, max } = queue.getAveragePrice()
+    logAverageIterationPrice(min, max)
   }
   logEngOfExtractor()
 }
 isExtractionDoneChecker();
 
+// Extracts next iteration from Queue to run it once in a time period
 const ticker = async () => {
   while (!allProductsExtracted) {
     logTick()

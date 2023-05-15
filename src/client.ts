@@ -18,7 +18,9 @@ export const fakeFetchData = ({ price }: Filters, initial = false, maxTotal: num
   const data: Response = {
     total,
     count,
-    products: Array(count).fill({})
+    products: Array(count).fill({
+      price: randomInRange(price.min, price.max)
+    })
   }
 
   return new Promise((res) => {
